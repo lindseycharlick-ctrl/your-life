@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Life</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* ── Config ── */
+    :root {
+      --bg: #0f0f14;
+      --surface: #1a1a24;
+      --surface2: #22222f;
+      --border: #2e2e3e;
+      --text: #e8e8f0;
+      --text2: #9090a8;
+      --accent: #7c3aed;
+      --accent-hover: #6d28d9;
+      --danger: #ef4444;
+      --radius: 10px;
+      --Health: #22c55e;
+      --Work: #3b82f6;
+      --Relationships: #ec4899;
+      --Learning: #f59e0b;
+      --Creativity: #8b5cf6;
+      --Finance: #14b8a6;
+      --Spirit: #f97316;
+      --Fun: #ef4444;
+    }
+    [data-theme="light"] {
+      --bg: #f3f4f8;
+      --surface: #ffffff;
+      --surface2: #f0f0f7;
+      --border: #e0e0ec;
+      --text: #111122;
+      --text2: #6666880;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ── Auth ── */
+    #auth-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1rem; }
+    .auth-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 2.5rem; width: 100%; max-width: 400px; }
+    .auth-card h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: .25rem; }
+    .auth-card p { color: var(--text2); margin-bottom: 2rem; font-size: .9rem; }
+    .auth-tabs { display: flex; gap: .5rem; margin-bottom: 1.5rem; }
+    .auth-tab { flex: 1; padding: .5rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; color: var(--text2); font-size: .875rem; }
+    .auth-tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; font-size: .8rem; color: var(--text2); margin-bottom: .4rem; text-transform: uppercase; letter-spacing: .05em; }
+    input, textarea, select { width: 100%; padding: .6rem .75rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: .9rem; outline: none; }
+    input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+    textarea { resize: vertical; min-height: 80px; }
+    .btn { padding: .6rem 1.2rem; border-radius: 6px; border: none; cursor: pointer; font-size: .875rem; font-weight: 500; transition: opacity .15s; }
+    .btn:hover { opacity: .85; }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-full { width: 100%; }
+    .error-msg { color: var(--danger); font-size: .8rem; margin-top: .5rem; }
+
+    /* ── Setup Screen ── */
+    #setup-screen { display: none; align-items: center; justify-content: center; min-height: 100vh; padding: 1rem; }
+    #setup-screen .auth-card { max-width: 520px; }
+    #setup-screen code { background: var(--surface2); padding: .15rem .4rem; border-radius: 4px; font-size: .85rem; word-break: break-all; }
+
+    /* ── App Shell ── */
+    #app { display: none; height: 100vh; overflow: hidden; }
+    .shell { display: grid; grid-template-columns: 220px 1fr; height: 100vh; }
+    @media (max-width: 768px) { .shell { grid-template-columns: 60px 1fr; } }
+
+    /* ── Sidebar ── */
+    #sidebar { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; }
+    .sidebar-brand { padding: 1.25rem 1rem; font-size: 1.1rem; font-weight: 700; color: var(--accent); border-bottom: 1px solid var(--border); }
+    @media (max-width: 768px) { .sidebar-brand { font-size: 0; padding: 1rem .75rem; } .sidebar-brand::before { content: '✦'; font-size: 1.2rem; } }
+    .nav-item { display: flex; align-items: center; gap: .75rem; padding: .7rem 1rem; cursor: pointer; border-radius: 0; color: var(--text2); font-size: .9rem; transition: background .15s, color .15s; }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: var(--surface2); color: var(--accent); font-weight: 600; }
+    .nav-icon { font-size: 1.1rem; flex-shrink: 0; }
+    .nav-label { @media (max-width: 768px) { display: none; } }
+    @media (max-width: 768px) { .nav-label { display: none; } .nav-item { justify-content: center; } }
+
+    /* ── Main Content ── */
+    #main-content { overflow-y: auto; height: 100vh; }
+    .view { padding: 2rem; max-width: 900px; margin: 0 auto; }
+    .view-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+    .view-title { font-size: 1.5rem; font-weight: 700; }
+    .view-subtitle { color: var(--text2); font-size: .9rem; margin-top: .2rem; }
+
+    /* ── Cards ── */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; margin-bottom: .75rem; }
+    .card-header { display: flex; align-items: center; gap: .5rem; margin-bottom: .5rem; }
+    .section { margin-bottom: 2rem; }
+    .section-title { font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; color: var(--text2); margin-bottom: .75rem; }
+
+    /* ── Task items ── */
+    .task-item { display: flex; align-items: flex-start; gap: .75rem; padding: .75rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin-bottom: .5rem; cursor: pointer; transition: border-color .15s; }
+    .task-item:hover { border-color: var(--accent); }
+    .task-item.completed { opacity: .5; }
+    .task-check { width: 18px; height: 18px; border: 2px solid var(--border); border-radius: 50%; flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-top: 2px; }
+    .task-check.checked { background: var(--accent); border-color: var(--accent); }
+    .task-check.checked::after { content: '✓'; font-size: .7rem; color: white; }
+    .task-body { flex: 1; min-width: 0; }
+    .task-title { font-size: .9rem; word-break: break-word; }
+    .task-meta { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .3rem; }
+    .badge { display: inline-block; padding: .15rem .5rem; border-radius: 99px; font-size: .7rem; font-weight: 600; }
+    .area-badge { color: white; }
+    .time-badge { background: var(--surface2); color: var(--text2); }
+
+    /* ── Tabs ── */
+    .tabs { display: flex; gap: .25rem; margin-bottom: 1.25rem; background: var(--surface2); padding: .25rem; border-radius: 8px; }
+    .tab { flex: 1; text-align: center; padding: .45rem .5rem; border-radius: 6px; cursor: pointer; font-size: .8rem; color: var(--text2); }
+    .tab.active { background: var(--surface); color: var(--text); font-weight: 600; }
+
+    /* ── Modal ── */
+    #modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 100; align-items: center; justify-content: center; padding: 1rem; }
+    #modal-overlay.open { display: flex; }
+    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); }
+    .modal-title { font-weight: 600; }
+    .modal-close { background: none; border: none; color: var(--text2); font-size: 1.2rem; cursor: pointer; padding: .2rem; line-height: 1; }
+    .modal-body { padding: 1.25rem; }
+    .modal-footer { display: flex; gap: .5rem; justify-content: flex-end; padding: 1rem 1.25rem; border-top: 1px solid var(--border); }
+
+    /* ── Habit checklist ── */
+    .habit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .5rem; }
+    .habit-item { display: flex; align-items: center; gap: .5rem; padding: .6rem .75rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; }
+    .habit-item.done { border-color: #22c55e; background: rgba(34,197,94,.08); }
+    .habit-check { width: 16px; height: 16px; border: 2px solid var(--border); border-radius: 4px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .habit-item.done .habit-check { background: #22c55e; border-color: #22c55e; }
+    .habit-item.done .habit-check::after { content: '✓'; font-size: .65rem; color: white; }
+    .habit-name { font-size: .82rem; }
+
+    /* ── Energy ── */
+    .energy-slider { display: flex; gap: .5rem; }
+    .energy-btn { flex: 1; padding: .6rem; border-radius: 8px; border: 2px solid var(--border); background: var(--surface2); cursor: pointer; font-size: 1.2rem; text-align: center; }
+    .energy-btn.active { border-color: var(--accent); background: rgba(124,58,237,.1); }
+
+    /* ── Goals / Projects grid ── */
+    .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: .75rem; }
+    .item-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; cursor: pointer; }
+    .item-card:hover { border-color: var(--accent); }
+    .item-card-title { font-weight: 600; margin-bottom: .3rem; }
+    .item-card-meta { font-size: .8rem; color: var(--text2); }
+
+    /* ── Ideas board ── */
+    .ideas-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
+    .ideas-col-title { font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; color: var(--text2); margin-bottom: .5rem; font-weight: 600; }
+
+    /* ── Reflect ── */
+    .practice-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: .5rem; margin-bottom: 1.5rem; }
+    .stat-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: .6rem .75rem; }
+    .stat-name { font-size: .75rem; color: var(--text2); }
+    .stat-value { font-size: 1.1rem; font-weight: 700; color: var(--text); }
+    .stat-bar { height: 3px; background: var(--border); border-radius: 2px; margin-top: .4rem; }
+    .stat-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; }
+
+    /* ── Quick add ── */
+    .quick-add { display: flex; gap: .5rem; margin-bottom: 1rem; }
+    .quick-add input { flex: 1; }
+
+    /* ── Spinner ── */
+    .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading { display: flex; justify-content: center; padding: 3rem; }
+
+    /* ── Empty states ── */
+    .empty { text-align: center; padding: 3rem 1rem; color: var(--text2); }
+    .empty-icon { font-size: 2.5rem; margin-bottom: .75rem; }
+
+    /* ── Life area group ── */
+    .area-group { margin-bottom: 1.5rem; }
+    .area-group-title { display: flex; align-items: center; gap: .5rem; margin-bottom: .75rem; font-weight: 600; }
+    .area-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    /* ── Settings ── */
+    .setting-row { display: flex; align-items: center; justify-content: space-between; padding: .75rem 0; border-bottom: 1px solid var(--border); }
+    .setting-label { font-size: .9rem; }
+    .setting-desc { font-size: .78rem; color: var(--text2); }
+    .theme-options { display: flex; gap: .5rem; }
+    .theme-btn { padding: .4rem .8rem; border-radius: 6px; border: 1px solid var(--border); background: var(--surface2); cursor: pointer; color: var(--text2); font-size: .8rem; }
+    .theme-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+    .practices-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin-top: .75rem; }
+
+    /* ── Morning card ── */
+    .morning-card { background: linear-gradient(135deg, rgba(124,58,237,.15), rgba(59,130,246,.1)); border: 1px solid rgba(124,58,237,.3); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.5rem; }
+    .morning-card h3 { font-size: 1rem; margin-bottom: 1rem; }
+
+    /* ── Misc ── */
+    .flex { display: flex; }
+    .gap-sm { gap: .5rem; }
+    .mt-sm { margin-top: .5rem; }
+    .w-full { width: 100%; }
+    .text-sm { font-size: .85rem; }
+    .text-muted { color: var(--text2); }
+    .text-danger { color: var(--danger); }
+    .divider { height: 1px; background: var(--border); margin: 1rem 0; }
+    select option { background: var(--surface); }
+    .week-nav { display: flex; align-items: center; gap: .75rem; margin-bottom: 1.25rem; }
+    .week-nav span { font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<!-- Setup Screen -->
+<div id="setup-screen">
+  <div class="auth-card">
+    <h1>⚙️ Setup Required</h1>
+    <p>Add your Supabase credentials to get started. Open <code>index.html</code> and update the two constants at the top of the &lt;script&gt; tag:</p>
+    <div style="background:var(--surface2);padding:1rem;border-radius:8px;font-family:monospace;font-size:.85rem;margin:1rem 0;line-height:1.8">
+      const SUPABASE_URL = '<strong>https://xxx.supabase.co</strong>';<br>
+      const SUPABASE_ANON_KEY = '<strong>your-anon-key</strong>';
+    </div>
+    <p style="font-size:.85rem;color:var(--text2)">Find these in your Supabase project → Settings → API. Also run <code>supabase-setup.sql</code> in the Supabase SQL Editor.</p>
+  </div>
+</div>
+
+<!-- Auth Screen -->
+<div id="auth-screen" style="display:none">
+  <div class="auth-card">
+    <h1>✦ Your Life</h1>
+    <p>Your personal life management system</p>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Sign In</button>
+      <button class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</button>
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="auth-email" placeholder="you@example.com">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="auth-password" placeholder="••••••••">
+    </div>
+    <div id="auth-error" class="error-msg"></div>
+    <button class="btn btn-primary btn-full" id="auth-btn" onclick="handleAuth()" style="margin-top:.75rem">Sign In</button>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app">
+  <div class="shell">
+    <nav id="sidebar">
+      <div class="sidebar-brand">✦ Your Life</div>
+      <div class="nav-item active" data-view="today" onclick="nav('today')"><span class="nav-icon">☀️</span><span class="nav-label">Today</span></div>
+      <div class="nav-item" data-view="tasks" onclick="nav('tasks')"><span class="nav-icon">✅</span><span class="nav-label">Tasks</span></div>
+      <div class="nav-item" data-view="projects" onclick="nav('projects')"><span class="nav-icon">📁</span><span class="nav-label">Projects</span></div>
+      <div class="nav-item" data-view="goals" onclick="nav('goals')"><span class="nav-icon">🎯</span><span class="nav-label">Goals</span></div>
+      <div class="nav-item" data-view="ideas" onclick="nav('ideas')"><span class="nav-icon">💡</span><span class="nav-label">Ideas</span></div>
+      <div class="nav-item" data-view="reflect" onclick="nav('reflect')"><span class="nav-icon">📔</span><span class="nav-label">Reflect</span></div>
+      <div style="flex:1"></div>
+      <div class="nav-item" data-view="settings" onclick="nav('settings')"><span class="nav-icon">⚙️</span><span class="nav-label">Settings</span></div>
+    </nav>
+    <main id="main-content"></main>
+  </div>
+</div>
+
+<!-- Modal -->
+<div id="modal-overlay" onclick="closeModalOnOverlay(event)">
+  <div class="modal" id="modal-box">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title"></span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// CONFIG — replace these with your values
+// ═══════════════════════════════════════
+const SUPABASE_URL = 'YOUR_SUPABASE_URL'
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'
+
+// ─── Life Areas ───────────────────────
+const LIFE_AREAS = ['Health','Work','Relationships','Learning','Creativity','Finance','Spirit','Fun']
+const AREA_COLORS = {
+  Health:'#22c55e', Work:'#3b82f6', Relationships:'#ec4899',
+  Learning:'#f59e0b', Creativity:'#8b5cf6', Finance:'#14b8a6',
+  Spirit:'#f97316', Fun:'#ef4444'
+}
+
+// ─── Default daily practices ──────────
+const DEFAULT_PRACTICES = [
+  'Meditation','Exercise','Journaling','Reading',
+  'Hydration','Healthy Eating','Deep Work','Gratitude',
+  'Cold Shower','Early Sleep'
+]
+
+// ─── State ────────────────────────────
+let sb = null
+let state = {
+  user: null,
+  view: 'today',
+  taskTab: 'today',
+  today: new Date().toISOString().split('T')[0],
+  data: { tasks:[], goals:[], projects:[], habits:[], ideas:[], dailyState:null, prefs:{} },
+  reflectWeek: null, // ISO date of week start (Monday)
+  editingId: null,
+  modalSubmit: null
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+;(function init() {
+  if (SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY') {
+    document.getElementById('setup-screen').style.display = 'flex'
+    return
+  }
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  state.reflectWeek = getWeekStart(new Date())
+
+  sb.auth.getSession().then(({ data: { session } }) => {
+    if (session) { state.user = session.user; showApp() }
+    else showAuth()
+  })
+  sb.auth.onAuthStateChange((_event, session) => {
+    if (session && !state.user) { state.user = session.user; showApp() }
+    else if (!session && state.user) { state.user = null; showAuth() }
+  })
+})()
+
+// ═══════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════
+let authMode = 'login'
+
+function switchAuthTab(mode) {
+  authMode = mode
+  document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', (i===0&&mode==='login')||(i===1&&mode==='signup')))
+  document.getElementById('auth-btn').textContent = mode === 'login' ? 'Sign In' : 'Create Account'
+}
+
+async function handleAuth() {
+  const email = document.getElementById('auth-email').value.trim()
+  const password = document.getElementById('auth-password').value
+  const errEl = document.getElementById('auth-error')
+  errEl.textContent = ''
+  if (!email || !password) { errEl.textContent = 'Please fill in all fields.'; return }
+  const btn = document.getElementById('auth-btn')
+  btn.disabled = true; btn.textContent = '…'
+  try {
+    let res
+    if (authMode === 'login') res = await sb.auth.signInWithPassword({ email, password })
+    else res = await sb.auth.signUp({ email, password })
+    if (res.error) errEl.textContent = res.error.message
+  } finally { btn.disabled = false; switchAuthTab(authMode) }
+}
+
+function showAuth() {
+  document.getElementById('auth-screen').style.display = 'flex'
+  document.getElementById('app').style.display = 'none'
+}
+
+async function showApp() {
+  document.getElementById('auth-screen').style.display = 'none'
+  document.getElementById('app').style.display = 'block'
+  await loadPrefs()
+  nav('today')
+}
+
+async function signOut() {
+  await sb.auth.signOut()
+}
+
+// ═══════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════
+async function nav(view) {
+  state.view = view
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.view === view))
+  const el = document.getElementById('main-content')
+  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>'
+  await loadViewData(view)
+  el.innerHTML = renderView(view)
+  attachHandlers(view)
+}
+
+async function loadViewData(view) {
+  const uid = state.user.id
+  const d = state.data
+  try {
+    if (view === 'today') {
+      const [t, h, ds] = await Promise.all([
+        sb.from('tasks').select('*,projects(title)').eq('user_id', uid).eq('scheduled_date', state.today).eq('someday', false).order('sort_order'),
+        sb.from('habits').select('*').eq('user_id', uid).eq('date', state.today),
+        sb.from('daily_state').select('*').eq('user_id', uid).eq('date', state.today).maybeSingle()
+      ])
+      d.tasks = t.data || []; d.habits = h.data || []; d.dailyState = ds.data
+    } else if (view === 'tasks') {
+      const { data } = await sb.from('tasks').select('*,projects(title)').eq('user_id', uid).order('sort_order')
+      d.tasks = data || []
+      const { data: pr } = await sb.from('projects').select('id,title').eq('user_id', uid).eq('status', 'active')
+      d.projects = pr || []
+    } else if (view === 'projects') {
+      const [pr, t] = await Promise.all([
+        sb.from('projects').select('*').eq('user_id', uid).order('sort_order'),
+        sb.from('tasks').select('id,project_id,completed').eq('user_id', uid)
+      ])
+      d.projects = pr.data || []; d.tasks = t.data || []
+    } else if (view === 'goals') {
+      const { data } = await sb.from('goals').select('*').eq('user_id', uid).order('sort_order')
+      d.goals = data || []
+    } else if (view === 'ideas') {
+      const { data } = await sb.from('ideas').select('*').eq('user_id', uid).order('sort_order')
+      d.ideas = data || []
+    } else if (view === 'reflect') {
+      const weekStart = state.reflectWeek
+      const weekEnd = addDays(weekStart, 6)
+      const [h, wr] = await Promise.all([
+        sb.from('habits').select('*').eq('user_id', uid).gte('date', weekStart).lte('date', weekEnd),
+        sb.from('weekly_reflections').select('*').eq('user_id', uid).eq('week_start', weekStart).maybeSingle()
+      ])
+      d.habits = h.data || []; d.weeklyReflection = wr.data
+    }
+  } catch(e) { console.error(e) }
+}
+
+// ═══════════════════════════════════════
+// RENDER VIEWS
+// ═══════════════════════════════════════
+function renderView(view) {
+  switch(view) {
+    case 'today':    return renderToday()
+    case 'tasks':    return renderTasks()
+    case 'projects': return renderProjects()
+    case 'goals':    return renderGoals()
+    case 'ideas':    return renderIdeas()
+    case 'reflect':  return renderReflect()
+    case 'settings': return renderSettings()
+    default:         return '<div class="view"><p>Not found</p></div>'
+  }
+}
+
+// ─── TODAY ────────────────────────────
+function renderToday() {
+  const { dailyState, tasks, habits } = state.data
+  const practices = getPractices()
+  const todayTasks = tasks.filter(t => !t.completed)
+  const doneTasks = tasks.filter(t => t.completed)
+
+  const morningDone = !!dailyState
+
+  let html = `<div class="view"><div class="view-header"><div><div class="view-title">☀️ Today</div><div class="view-subtitle">${formatDateLong(state.today)}</div></div></div>`
+
+  // Morning check-in
+  if (!morningDone) {
+    html += `<div class="morning-card">
+      <h3>🌅 Good morning! How are you starting today?</h3>
+      <div class="form-group">
+        <label>Energy Level</label>
+        <div class="energy-slider" id="energy-btns">
+          ${[1,2,3,4,5].map(n => `<button class="energy-btn" data-energy="${n}" onclick="setEnergy(${n})">${['😴','😐','🙂','😊','🔥'][n-1]}</button>`).join('')}
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Top 3 Priorities</label>
+        <input placeholder="Priority 1" id="p1" style="margin-bottom:.4rem">
+        <input placeholder="Priority 2" id="p2" style="margin-bottom:.4rem">
+        <input placeholder="Priority 3" id="p3">
+      </div>
+      <div class="form-group">
+        <label>Daily Intention</label>
+        <textarea placeholder="What's your intention for today?" id="intention" style="min-height:60px"></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="saveMorning()">Save Morning Check-in</button>
+    </div>`
+  } else {
+    html += `<div class="card" style="margin-bottom:1rem">
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+        <span style="font-size:1.5rem">${['😴','😐','🙂','😊','🔥'][(dailyState.energy||3)-1]}</span>
+        <div>
+          ${dailyState.priority1 ? `<div class="text-sm">✦ ${dailyState.priority1}</div>` : ''}
+          ${dailyState.priority2 ? `<div class="text-sm">✦ ${dailyState.priority2}</div>` : ''}
+          ${dailyState.priority3 ? `<div class="text-sm">✦ ${dailyState.priority3}</div>` : ''}
+          ${dailyState.intention ? `<div class="text-sm text-muted" style="margin-top:.3rem;font-style:italic">"${dailyState.intention}"</div>` : ''}
+        </div>
+        <button class="btn btn-secondary" style="margin-left:auto" onclick="editMorning()">Edit</button>
+      </div>
+    </div>`
+  }
+
+  // Daily practices
+  html += `<div class="section"><div class="section-title">Daily Practices</div><div class="habit-grid">`
+  practices.forEach((name, i) => {
+    const done = habits.some(h => h.practice_index === i && h.completed)
+    html += `<div class="habit-item ${done?'done':''}" onclick="toggleHabit(${i})"><div class="habit-check"></div><span class="habit-name">${name}</span></div>`
+  })
+  html += `</div></div>`
+
+  // Tasks
+  html += `<div class="section"><div class="section-title">Tasks for Today</div>`
+  html += `<div class="quick-add"><input type="text" id="quick-task" placeholder="Add a task for today…" onkeydown="if(event.key==='Enter')quickAddTask()"><button class="btn btn-primary" onclick="quickAddTask()">Add</button></div>`
+  if (todayTasks.length === 0 && doneTasks.length === 0) {
+    html += `<div class="empty"><div class="empty-icon">🎉</div><div>No tasks scheduled. Enjoy your day!</div></div>`
+  }
+  todayTasks.forEach(t => html += renderTaskItem(t))
+  if (doneTasks.length > 0) {
+    html += `<div class="section-title" style="margin-top:1rem">Completed</div>`
+    doneTasks.forEach(t => html += renderTaskItem(t))
+  }
+  html += `</div></div>`
+  return html
+}
+
+// ─── TASKS ────────────────────────────
+function renderTasks() {
+  const tab = state.taskTab
+  const all = state.data.tasks
+  let filtered
+  if (tab === 'today') filtered = all.filter(t => t.scheduled_date === state.today && !t.someday && !t.completed)
+  else if (tab === 'upcoming') filtered = all.filter(t => t.scheduled_date && t.scheduled_date > state.today && !t.someday && !t.completed)
+  else if (tab === 'someday') filtered = all.filter(t => t.someday && !t.completed)
+  else filtered = all.filter(t => t.completed)
+
+  let html = `<div class="view">
+    <div class="view-header"><div class="view-title">✅ Tasks</div><button class="btn btn-primary" onclick="openTaskModal()">+ Add Task</button></div>
+    <div class="tabs">
+      <div class="tab ${tab==='today'?'active':''}" onclick="setTaskTab('today')">Today</div>
+      <div class="tab ${tab==='upcoming'?'active':''}" onclick="setTaskTab('upcoming')">Upcoming</div>
+      <div class="tab ${tab==='someday'?'active':''}" onclick="setTaskTab('someday')">Someday</div>
+      <div class="tab ${tab==='completed'?'active':''}" onclick="setTaskTab('completed')">Done</div>
+    </div>`
+
+  if (filtered.length === 0) html += `<div class="empty"><div class="empty-icon">✨</div><div>No tasks here</div></div>`
+  filtered.forEach(t => html += renderTaskItem(t, true))
+  html += `</div>`
+  return html
+}
+
+function renderTaskItem(task, showEdit=false) {
+  const area = task.life_area
+  const color = area ? AREA_COLORS[area] : null
+  const projName = task.projects?.title || ''
+  return `<div class="task-item ${task.completed?'completed':''}">
+    <div class="task-check ${task.completed?'checked':''}" onclick="toggleTask('${task.id}',${!task.completed},event)"></div>
+    <div class="task-body" onclick="openTaskModal('${task.id}')">
+      <div class="task-title">${esc(task.title)}</div>
+      <div class="task-meta">
+        ${area ? `<span class="badge area-badge" style="background:${color}">${area}</span>` : ''}
+        ${task.time_estimate ? `<span class="badge time-badge">⏱ ${task.time_estimate}</span>` : ''}
+        ${projName ? `<span class="badge time-badge">📁 ${esc(projName)}</span>` : ''}
+        ${task.recurring && task.recurring!=='none' ? `<span class="badge time-badge">🔄 ${task.recurring}</span>` : ''}
+        ${task.scheduled_date && task.scheduled_date !== state.today ? `<span class="badge time-badge">📅 ${task.scheduled_date}</span>` : ''}
+      </div>
+    </div>
+  </div>`
+}
+
+// ─── PROJECTS ─────────────────────────
+function renderProjects() {
+  const { projects, tasks } = state.data
+  const taskCount = id => tasks.filter(t => t.project_id === id && !t.completed).length
+
+  let html = `<div class="view">
+    <div class="view-header"><div class="view-title">📁 Projects</div><button class="btn btn-primary" onclick="openProjectModal()">+ New Project</button></div>`
+
+  if (projects.length === 0) {
+    html += `<div class="empty"><div class="empty-icon">📁</div><div>No projects yet</div></div>`
+  } else {
+    html += `<div class="items-grid">`
+    projects.filter(p => p.status === 'active').forEach(p => {
+      const color = p.life_area ? AREA_COLORS[p.life_area] : '#888'
+      const cnt = taskCount(p.id)
+      html += `<div class="item-card" onclick="openProjectModal('${p.id}')">
+        ${p.life_area ? `<div style="width:100%;height:3px;background:${color};border-radius:2px;margin-bottom:.75rem"></div>` : ''}
+        <div class="item-card-title">${esc(p.title)}</div>
+        <div class="item-card-meta">${p.life_area||''} ${p.life_area&&cnt?'·':''} ${cnt ? `${cnt} task${cnt!==1?'s':''}` : ''}</div>
+        ${p.description ? `<div class="text-sm text-muted" style="margin-top:.5rem">${esc(p.description)}</div>` : ''}
+      </div>`
+    })
+
+    const archived = projects.filter(p => p.status !== 'active')
+    if (archived.length > 0) {
+      html += `</div><div class="section-title" style="margin-top:1.5rem">Archived / Completed</div><div class="items-grid">`
+      archived.forEach(p => {
+        html += `<div class="item-card" style="opacity:.6" onclick="openProjectModal('${p.id}')">
+          <div class="item-card-title">${esc(p.title)}</div>
+          <div class="item-card-meta">${p.status} ${p.life_area?'· '+p.life_area:''}</div>
+        </div>`
+      })
+    }
+    html += `</div>`
+  }
+  html += `</div>`
+  return html
+}
+
+// ─── GOALS ────────────────────────────
+function renderGoals() {
+  const { goals } = state.data
+  const byArea = {}
+  goals.forEach(g => {
+    const a = g.life_area || 'Other'
+    if (!byArea[a]) byArea[a] = []
+    byArea[a].push(g)
+  })
+
+  let html = `<div class="view">
+    <div class="view-header"><div class="view-title">🎯 Goals</div><button class="btn btn-primary" onclick="openGoalModal()">+ New Goal</button></div>`
+
+  if (goals.length === 0) {
+    html += `<div class="empty"><div class="empty-icon">🎯</div><div>No goals yet. Dream big!</div></div>`
+  }
+
+  Object.entries(byArea).forEach(([area, aGoals]) => {
+    const color = AREA_COLORS[area] || '#888'
+    html += `<div class="area-group">
+      <div class="area-group-title"><div class="area-dot" style="background:${color}"></div>${area}</div>
+      <div class="items-grid">`
+    aGoals.forEach(g => {
+      const statusColor = {active:'#22c55e',completed:'#3b82f6',paused:'#f59e0b'}[g.status]||'#888'
+      html += `<div class="item-card" onclick="openGoalModal('${g.id}')">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem">
+          <div class="item-card-title">${esc(g.title)}</div>
+          <span class="badge" style="background:${statusColor};color:white;flex-shrink:0">${g.status}</span>
+        </div>
+        ${g.target_date ? `<div class="item-card-meta" style="margin-top:.4rem">📅 ${g.target_date}</div>` : ''}
+        ${g.notes ? `<div class="text-sm text-muted" style="margin-top:.4rem">${esc(g.notes)}</div>` : ''}
+      </div>`
+    })
+    html += `</div></div>`
+  })
+
+  html += `</div>`
+  return html
+}
+
+// ─── IDEAS ────────────────────────────
+function renderIdeas() {
+  const { ideas } = state.data
+  const statuses = ['seeds','growing','ready','archived']
+  const labels = { seeds:'🌱 Seeds', growing:'🌿 Growing', ready:'✨ Ready', archived:'📦 Archived' }
+
+  let html = `<div class="view">
+    <div class="view-header"><div class="view-title">💡 Idea Vault</div><button class="btn btn-primary" onclick="openIdeaModal()">+ New Idea</button></div>
+    <div class="ideas-board">`
+
+  statuses.forEach(status => {
+    const statusIdeas = ideas.filter(i => i.status === status)
+    html += `<div>`
+    html += `<div class="ideas-col-title">${labels[status]} <span style="color:var(--text2);font-weight:400">(${statusIdeas.length})</span></div>`
+    if (statusIdeas.length === 0) {
+      html += `<div style="color:var(--text2);font-size:.8rem;padding:.5rem 0">Empty</div>`
+    }
+    statusIdeas.forEach(idea => {
+      const color = idea.life_area ? AREA_COLORS[idea.life_area] : '#888'
+      html += `<div class="item-card" style="margin-bottom:.5rem" onclick="openIdeaModal('${idea.id}')">
+        <div class="item-card-title" style="font-size:.875rem">${esc(idea.title)}</div>
+        ${idea.life_area ? `<span class="badge area-badge" style="background:${color};margin-top:.4rem">${idea.life_area}</span>` : ''}
+        ${idea.description ? `<div class="text-sm text-muted" style="margin-top:.4rem">${esc(idea.description)}</div>` : ''}
+      </div>`
+    })
+    html += `</div>`
+  })
+
+  html += `</div></div>`
+  return html
+}
+
+// ─── REFLECT ──────────────────────────
+function renderReflect() {
+  const { habits, weeklyReflection } = state.data
+  const practices = getPractices()
+  const weekStart = state.reflectWeek
+  const weekEnd = addDays(weekStart, 6)
+
+  // compute per-practice completion counts (out of 7)
+  const stats = practices.map((name, i) => {
+    const count = habits.filter(h => h.practice_index === i && h.completed).length
+    return { name, count, pct: Math.round((count/7)*100) }
+  })
+
+  let html = `<div class="view">
+    <div class="view-header"><div class="view-title">📔 Weekly Reflection</div></div>
+    <div class="week-nav">
+      <button class="btn btn-secondary" onclick="shiftWeek(-1)">◀</button>
+      <span>${formatDateShort(weekStart)} – ${formatDateShort(weekEnd)}</span>
+      <button class="btn btn-secondary" onclick="shiftWeek(1)" ${weekStart >= getWeekStart(new Date()) ? 'disabled' : ''}>▶</button>
+    </div>
+    <div class="section"><div class="section-title">Practice Completion</div>
+    <div class="practice-stats">`
+
+  stats.forEach(s => {
+    html += `<div class="stat-item">
+      <div class="stat-name">${s.name}</div>
+      <div class="stat-value">${s.count}/7</div>
+      <div class="stat-bar"><div class="stat-bar-fill" style="width:${s.pct}%"></div></div>
+    </div>`
+  })
+
+  html += `</div></div>
+    <div class="section">
+      <div class="section-title">Reflection</div>
+      <textarea id="reflection-text" style="width:100%;min-height:200px;font-size:.9rem;line-height:1.6" placeholder="What went well? What can be improved? What are you grateful for?">${weeklyReflection?.reflection || ''}</textarea>
+      <button class="btn btn-primary" style="margin-top:.75rem" onclick="saveReflection()">Save Reflection</button>
+    </div>
+  </div>`
+  return html
+}
+
+// ─── SETTINGS ─────────────────────────
+function renderSettings() {
+  const prefs = state.data.prefs
+  const theme = prefs.theme || 'system'
+  const practices = getPractices()
+
+  let html = `<div class="view">
+    <div class="view-header"><div class="view-title">⚙️ Settings</div></div>
+
+    <div class="card" style="margin-bottom:1rem">
+      <div class="section-title">Appearance</div>
+      <div class="setting-row">
+        <div><div class="setting-label">Theme</div></div>
+        <div class="theme-options">
+          <button class="theme-btn ${theme==='light'?'active':''}" onclick="setTheme('light')">Light</button>
+          <button class="theme-btn ${theme==='dark'?'active':''}" onclick="setTheme('dark')">Dark</button>
+          <button class="theme-btn ${theme==='system'?'active':''}" onclick="setTheme('system')">System</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:1rem">
+      <div class="section-title">Daily Practices</div>
+      <div class="text-sm text-muted" style="margin-bottom:.75rem">Name your 10 daily practice slots</div>
+      <div class="practices-grid" id="practices-inputs">`
+
+  practices.forEach((name, i) => {
+    html += `<div class="form-group" style="margin-bottom:.5rem">
+      <label style="font-size:.7rem">#${i+1}</label>
+      <input value="${esc(name)}" data-practice-idx="${i}" onchange="updatePracticeName(${i},this.value)" placeholder="Practice ${i+1}">
+    </div>`
+  })
+
+  html += `</div>
+      <button class="btn btn-primary" style="margin-top:.5rem" onclick="savePractices()">Save Practices</button>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Account</div>
+      <div class="setting-row">
+        <div><div class="setting-label">Signed in as</div><div class="setting-desc">${esc(state.user.email)}</div></div>
+        <button class="btn btn-secondary" onclick="signOut()">Sign Out</button>
+      </div>
+    </div>
+  </div>`
+  return html
+}
+
+// ═══════════════════════════════════════
+// HANDLERS & ACTIONS
+// ═══════════════════════════════════════
+function attachHandlers(view) {
+  // Keyboard shortcut for quick add
+  const qi = document.getElementById('quick-task')
+  if (qi) qi.focus()
+}
+
+// ─── Today handlers ───────────────────
+let selectedEnergy = 3
+
+function setEnergy(n) {
+  selectedEnergy = n
+  document.querySelectorAll('.energy-btn').forEach((btn,i) => btn.classList.toggle('active', i+1===n))
+}
+
+async function saveMorning() {
+  const uid = state.user.id
+  const row = {
+    user_id: uid,
+    date: state.today,
+    energy: selectedEnergy,
+    priority1: document.getElementById('p1')?.value || '',
+    priority2: document.getElementById('p2')?.value || '',
+    priority3: document.getElementById('p3')?.value || '',
+    intention: document.getElementById('intention')?.value || ''
+  }
+  const { error } = await sb.from('daily_state').upsert(row, { onConflict: 'user_id,date' })
+  if (!error) nav('today')
+}
+
+async function editMorning() {
+  state.data.dailyState = null
+  nav('today')
+}
+
+async function toggleHabit(idx) {
+  const uid = state.user.id
+  const existing = state.data.habits.find(h => h.practice_index === idx)
+  if (existing) {
+    await sb.from('habits').update({ completed: !existing.completed }).eq('id', existing.id)
+  } else {
+    await sb.from('habits').insert({ user_id: uid, date: state.today, practice_index: idx, completed: true })
+  }
+  // Reload habits
+  const { data } = await sb.from('habits').select('*').eq('user_id', uid).eq('date', state.today)
+  state.data.habits = data || []
+  document.getElementById('main-content').innerHTML = renderToday()
+  attachHandlers('today')
+}
+
+async function quickAddTask() {
+  const inp = document.getElementById('quick-task')
+  const title = inp?.value?.trim()
+  if (!title) return
+  const { error } = await sb.from('tasks').insert({ user_id: state.user.id, title, scheduled_date: state.today, someday: false })
+  if (!error) { inp.value = ''; await nav('today') }
+}
+
+async function toggleTask(id, completed, e) {
+  e.stopPropagation()
+  const update = { completed, completed_at: completed ? new Date().toISOString() : null }
+  await sb.from('tasks').update(update).eq('id', id)
+  await nav(state.view)
+}
+
+// ─── Task modal ───────────────────────
+function setTaskTab(tab) { state.taskTab = tab; nav('tasks') }
+
+function openTaskModal(id) {
+  const task = id ? state.data.tasks.find(t => t.id === id) : null
+  state.editingId = id || null
+
+  const projects = state.data.projects || []
+  const projectOpts = projects.map(p => `<option value="${p.id}" ${task?.project_id===p.id?'selected':''}>${esc(p.title)}</option>`).join('')
+
+  const body = `
+    <div class="form-group"><label>Title *</label><input id="f-title" value="${esc(task?.title||'')}" placeholder="Task title"></div>
+    <div class="form-group"><label>Notes</label><textarea id="f-notes">${esc(task?.notes||'')}</textarea></div>
+    <div class="form-group"><label>Life Area</label><select id="f-area">
+      <option value="">None</option>
+      ${LIFE_AREAS.map(a => `<option value="${a}" ${task?.life_area===a?'selected':''}>${a}</option>`).join('')}
+    </select></div>
+    <div class="form-group"><label>Scheduled Date</label><input type="date" id="f-date" value="${task?.scheduled_date||''}"></div>
+    <div class="form-group"><label>Time Estimate</label><select id="f-time">
+      <option value="">None</option>
+      ${['15m','30m','1h','2h','3h+'].map(t => `<option value="${t}" ${task?.time_estimate===t?'selected':''}>${t}</option>`).join('')}
+    </select></div>
+    <div class="form-group"><label>Recurring</label><select id="f-recurring">
+      ${['none','daily','weekly','monthly'].map(r => `<option value="${r}" ${(task?.recurring||'none')===r?'selected':''}>${r}</option>`).join('')}
+    </select></div>
+    <div class="form-group"><label>Project</label><select id="f-project">
+      <option value="">None</option>${projectOpts}
+    </select></div>
+    <div class="form-group" style="display:flex;gap:.75rem;align-items:center">
+      <input type="checkbox" id="f-someday" ${task?.someday?'checked':''} style="width:auto">
+      <label style="margin:0">Someday / Maybe</label>
+    </div>
+  `
+  const footer = `
+    ${id ? `<button class="btn btn-danger" onclick="deleteTask('${id}')">Delete</button>` : ''}
+    <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveTask()">Save</button>
+  `
+  showModal(id ? 'Edit Task' : 'New Task', body, footer)
+}
+
+async function saveTask() {
+  const title = document.getElementById('f-title')?.value?.trim()
+  if (!title) return
+  const row = {
+    user_id: state.user.id,
+    title,
+    notes: document.getElementById('f-notes')?.value || null,
+    life_area: document.getElementById('f-area')?.value || null,
+    scheduled_date: document.getElementById('f-date')?.value || null,
+    time_estimate: document.getElementById('f-time')?.value || null,
+    recurring: document.getElementById('f-recurring')?.value || 'none',
+    project_id: document.getElementById('f-project')?.value || null,
+    someday: document.getElementById('f-someday')?.checked || false
+  }
+  if (state.editingId) await sb.from('tasks').update(row).eq('id', state.editingId)
+  else await sb.from('tasks').insert(row)
+  closeModal()
+  await nav(state.view)
+}
+
+async function deleteTask(id) {
+  if (!confirm('Delete this task?')) return
+  await sb.from('tasks').delete().eq('id', id)
+  closeModal()
+  await nav(state.view)
+}
+
+// ─── Project modal ────────────────────
+function openProjectModal(id) {
+  const item = id ? state.data.projects.find(p => p.id === id) : null
+  state.editingId = id || null
+
+  const body = `
+    <div class="form-group"><label>Title *</label><input id="f-title" value="${esc(item?.title||'')}" placeholder="Project name"></div>
+    <div class="form-group"><label>Life Area</label><select id="f-area">
+      <option value="">None</option>
+      ${LIFE_AREAS.map(a => `<option value="${a}" ${item?.life_area===a?'selected':''}>${a}</option>`).join('')}
+    </select></div>
+    <div class="form-group"><label>Description</label><textarea id="f-desc">${esc(item?.description||'')}</textarea></div>
+    <div class="form-group"><label>Status</label><select id="f-status">
+      ${['active','completed','archived'].map(s => `<option value="${s}" ${(item?.status||'active')===s?'selected':''}>${s}</option>`).join('')}
+    </select></div>
+  `
+  const footer = `
+    ${id ? `<button class="btn btn-danger" onclick="deleteProject('${id}')">Delete</button>` : ''}
+    <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveProject()">Save</button>
+  `
+  showModal(id ? 'Edit Project' : 'New Project', body, footer)
+}
+
+async function saveProject() {
+  const title = document.getElementById('f-title')?.value?.trim()
+  if (!title) return
+  const row = {
+    user_id: state.user.id,
+    title,
+    life_area: document.getElementById('f-area')?.value || null,
+    description: document.getElementById('f-desc')?.value || null,
+    status: document.getElementById('f-status')?.value || 'active'
+  }
+  if (state.editingId) await sb.from('projects').update(row).eq('id', state.editingId)
+  else await sb.from('projects').insert(row)
+  closeModal()
+  await nav('projects')
+}
+
+async function deleteProject(id) {
+  if (!confirm('Delete this project?')) return
+  await sb.from('projects').delete().eq('id', id)
+  closeModal()
+  await nav('projects')
+}
+
+// ─── Goal modal ───────────────────────
+function openGoalModal(id) {
+  const item = id ? state.data.goals.find(g => g.id === id) : null
+  state.editingId = id || null
+
+  const body = `
+    <div class="form-group"><label>Title *</label><input id="f-title" value="${esc(item?.title||'')}" placeholder="Goal title"></div>
+    <div class="form-group"><label>Life Area</label><select id="f-area">
+      <option value="">None</option>
+      ${LIFE_AREAS.map(a => `<option value="${a}" ${item?.life_area===a?'selected':''}>${a}</option>`).join('')}
+    </select></div>
+    <div class="form-group"><label>Target Date</label><input type="date" id="f-date" value="${item?.target_date||''}"></div>
+    <div class="form-group"><label>Notes</label><textarea id="f-notes">${esc(item?.notes||'')}</textarea></div>
+    <div class="form-group"><label>Status</label><select id="f-status">
+      ${['active','completed','paused'].map(s => `<option value="${s}" ${(item?.status||'active')===s?'selected':''}>${s}</option>`).join('')}
+    </select></div>
+  `
+  const footer = `
+    ${id ? `<button class="btn btn-danger" onclick="deleteGoal('${id}')">Delete</button>` : ''}
+    <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveGoal()">Save</button>
+  `
+  showModal(id ? 'Edit Goal' : 'New Goal', body, footer)
+}
+
+async function saveGoal() {
+  const title = document.getElementById('f-title')?.value?.trim()
+  if (!title) return
+  const row = {
+    user_id: state.user.id,
+    title,
+    life_area: document.getElementById('f-area')?.value || null,
+    target_date: document.getElementById('f-date')?.value || null,
+    notes: document.getElementById('f-notes')?.value || null,
+    status: document.getElementById('f-status')?.value || 'active'
+  }
+  if (state.editingId) await sb.from('goals').update(row).eq('id', state.editingId)
+  else await sb.from('goals').insert(row)
+  closeModal()
+  await nav('goals')
+}
+
+async function deleteGoal(id) {
+  if (!confirm('Delete this goal?')) return
+  await sb.from('goals').delete().eq('id', id)
+  closeModal()
+  await nav('goals')
+}
+
+// ─── Idea modal ───────────────────────
+function openIdeaModal(id) {
+  const item = id ? state.data.ideas.find(i => i.id === id) : null
+  state.editingId = id || null
+
+  const body = `
+    <div class="form-group"><label>Title *</label><input id="f-title" value="${esc(item?.title||'')}" placeholder="Your idea…"></div>
+    <div class="form-group"><label>Description</label><textarea id="f-desc">${esc(item?.description||'')}</textarea></div>
+    <div class="form-group"><label>Life Area</label><select id="f-area">
+      <option value="">None</option>
+      ${LIFE_AREAS.map(a => `<option value="${a}" ${item?.life_area===a?'selected':''}>${a}</option>`).join('')}
+    </select></div>
+    <div class="form-group"><label>Status</label><select id="f-status">
+      ${['seeds','growing','ready','archived'].map(s => `<option value="${s}" ${(item?.status||'seeds')===s?'selected':''}>${s}</option>`).join('')}
+    </select></div>
+  `
+  const footer = `
+    ${id ? `<button class="btn btn-danger" onclick="deleteIdea('${id}')">Delete</button>` : ''}
+    <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveIdea()">Save</button>
+  `
+  showModal(id ? 'Edit Idea' : 'New Idea', body, footer)
+}
+
+async function saveIdea() {
+  const title = document.getElementById('f-title')?.value?.trim()
+  if (!title) return
+  const row = {
+    user_id: state.user.id,
+    title,
+    description: document.getElementById('f-desc')?.value || null,
+    life_area: document.getElementById('f-area')?.value || null,
+    status: document.getElementById('f-status')?.value || 'seeds'
+  }
+  if (state.editingId) await sb.from('ideas').update(row).eq('id', state.editingId)
+  else await sb.from('ideas').insert(row)
+  closeModal()
+  await nav('ideas')
+}
+
+async function deleteIdea(id) {
+  if (!confirm('Delete this idea?')) return
+  await sb.from('ideas').delete().eq('id', id)
+  closeModal()
+  await nav('ideas')
+}
+
+// ─── Reflect handlers ─────────────────
+async function saveReflection() {
+  const text = document.getElementById('reflection-text')?.value || ''
+  const uid = state.user.id
+  const practices = getPractices()
+  const habits = state.data.habits || []
+  const practice_stats = {}
+  practices.forEach((name, i) => {
+    practice_stats[name] = habits.filter(h => h.practice_index === i && h.completed).length
+  })
+
+  await sb.from('weekly_reflections').upsert({
+    user_id: uid,
+    week_start: state.reflectWeek,
+    reflection: text,
+    practice_stats
+  }, { onConflict: 'user_id,week_start' })
+
+  // Quick feedback
+  const btn = document.querySelector('#main-content .btn-primary')
+  if (btn) { btn.textContent = 'Saved ✓'; setTimeout(() => { btn.textContent = 'Save Reflection' }, 2000) }
+}
+
+function shiftWeek(dir) {
+  const d = new Date(state.reflectWeek + 'T00:00:00')
+  d.setDate(d.getDate() + dir * 7)
+  state.reflectWeek = d.toISOString().split('T')[0]
+  nav('reflect')
+}
+
+// ─── Settings handlers ────────────────
+async function loadPrefs() {
+  const { data } = await sb.from('user_preferences').select('*').eq('user_id', state.user.id).maybeSingle()
+  state.data.prefs = data || {}
+  applyTheme(data?.theme || 'system')
+}
+
+async function setTheme(theme) {
+  state.data.prefs.theme = theme
+  applyTheme(theme)
+  await sb.from('user_preferences').upsert({ user_id: state.user.id, theme }, { onConflict: 'user_id' })
+  nav('settings')
+}
+
+function applyTheme(theme) {
+  const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light')
+}
+
+function updatePracticeName(idx, val) {
+  const prefs = state.data.prefs
+  const area = prefs.area_focus || {}
+  const practices = area.practices || [...DEFAULT_PRACTICES]
+  practices[idx] = val
+  if (!prefs.area_focus) prefs.area_focus = {}
+  prefs.area_focus.practices = practices
+}
+
+async function savePractices() {
+  const prefs = state.data.prefs
+  await sb.from('user_preferences').upsert({
+    user_id: state.user.id,
+    area_focus: prefs.area_focus || {}
+  }, { onConflict: 'user_id' })
+  const btn = document.querySelector('#main-content .btn-primary')
+  if (btn) { btn.textContent = 'Saved ✓'; setTimeout(() => btn.textContent = 'Save Practices', 2000) }
+}
+
+// ═══════════════════════════════════════
+// MODAL SYSTEM
+// ═══════════════════════════════════════
+function showModal(title, body, footer='') {
+  document.getElementById('modal-title').textContent = title
+  document.getElementById('modal-body').innerHTML = body
+  document.getElementById('modal-footer').innerHTML = footer
+  document.getElementById('modal-overlay').classList.add('open')
+  // Focus first input
+  setTimeout(() => document.querySelector('#modal-body input, #modal-body textarea')?.focus(), 50)
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open')
+  state.editingId = null
+}
+
+function closeModalOnOverlay(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal()
+}
+
+// ═══════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════
+function esc(str) {
+  if (!str) return ''
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+}
+
+function getPractices() {
+  const saved = state.data.prefs?.area_focus?.practices
+  if (saved && Array.isArray(saved) && saved.length === 10) return saved
+  return [...DEFAULT_PRACTICES]
+}
+
+function getWeekStart(date) {
+  const d = new Date(date)
+  const day = d.getDay()
+  const diff = day === 0 ? -6 : 1 - day // Monday start
+  d.setDate(d.getDate() + diff)
+  return d.toISOString().split('T')[0]
+}
+
+function addDays(dateStr, n) {
+  const d = new Date(dateStr + 'T00:00:00')
+  d.setDate(d.getDate() + n)
+  return d.toISOString().split('T')[0]
+}
+
+function formatDateLong(dateStr) {
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' })
+}
+
+function formatDateShort(dateStr) {
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { month:'short', day:'numeric' })
+}
+
+// Close modal on Escape
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal() })
+</script>
+</body>
+</html>
